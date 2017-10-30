@@ -25,6 +25,9 @@ class complex:
     #     if self._real > 0:
     #         if self._i
 
+zero = complex(0,0)
+
+
 def triArea(a: Decimal, b: Decimal, c: Decimal) -> Decimal:
     """ Calculate the area of a triangle given the length of its sides"""
     s = (a + b + c) / Decimal(2)
@@ -115,6 +118,38 @@ def findArea(point: complex, ch: list, dp: list) -> Decimal:
     
     return area[-1]
 
+def searchMin(lo: int, hi: int, ch: list, point: complex) -> int:
+    """ Find the index of the point in `ch` in the indexes between `lo` and `hi`
+        that yields the smallest angle from `point` """
+    m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
+    phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
+    while hi - lo > 1:
+        if phi1 < phi2:
+            hi = m1
+        else if phi2 < phi3:
+            
+        m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
+        phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
+
+def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
+    """ point is below the polygon, so find the area looking upward """
+    phi = (zero - point).phase()
+    
+    # find which points the angle is between
+    lo, hi = 0, len(ch)
+    while hi - lo > 1:
+        mid = (hi + lo) // 2
+        if phi < ch[mid][0]:
+            hi = mid
+        else:
+            lo = mid
+    
+    leftSide = searchMin(0, lo, ch, point)
+    if hi == len(ch):
+        rightSide = 0
+    else:
+        rightSide = searchMin(hi, len(ch) - 1, ch, point)
+    
 
 n, k = map(int, input().split())
 while True:
@@ -130,16 +165,19 @@ while True:
     
     dp = buildAreas(ch, pivot)
     
-    # print(dp)
+    negCh = [(phi + pi, r, zero - p) for phi, r, p in ch]
     
     maxArea = dp[-1]
     
     for point in points[k:n]:
         point = point - pivot
         # print(point._real, point._imag)
-        if not inside(ch, point):
-            area = findArea(point, ch, dp)
-            # print(area)
+        ins, lo, hi = inside(ch, point)
+        if not ins:
+            if lo == -1:
+                area = findAreaBelow(point, ch, dp)
+            else:
+                area = findAreaAbove(zero - poitn, negCh, dp)
             maxArea = max(maxArea, area)
     
     print("{:.1f}".format(maxArea))
