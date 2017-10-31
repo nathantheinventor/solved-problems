@@ -1,7 +1,41 @@
 from decimal import *
 from math import atan2, pi
+import sys
 
-getcontext().prec = 100
+getcontext().prec = 28
+
+zeroD = Decimal(0)
+
+class angle:
+    def __init__(self, x: Decimal, y: Decimal):
+        self._y = y
+        self._x = x
+    
+    def __lt__(self, other) -> bool:
+        result = self._y * other._x - self._x * other._y
+        return result > zeroD
+    
+    def __le__(self, other) -> bool:
+        result = self._y * other._x - self._x * other._y
+        # print(self._x, self._y, other._x, other._y, result, self._y * other._x, self._x + other._y)
+        return result >= zeroD
+
+    def __gt__(self, other) -> bool:
+        result = self._y * other._x - self._x * other._y
+        return result < zeroD
+
+    def __ge__(self, other) -> bool:
+        result = self._y * other._x - self._x * other._y
+        return result <= zeroD
+
+    def __str__(self) -> str:
+        return "'{} {} {}'".format(atan2(self._x, self._y), self._y, self._x)
+    
+    def __add__(self, d: float):
+        return angle(-self._y, -self._x)
+    
+    def __sub__(self, d: float):
+        return angle(-self._y, -self._x)
 
 class complex:
     def __init__(self, real, imag):
@@ -12,7 +46,7 @@ class complex:
         return (self._real ** 2 + self._imag ** 2).sqrt()
     
     def phase(self):
-        ans = atan2(self._real, self._imag)
+        ans = angle(self._imag, self._real)
         return ans
         
     def __sub__(self, other):
@@ -44,7 +78,7 @@ def convexHull(points: list) -> tuple:
     points = sorted([(p.phase(), p.abs(), p) for p in points])
     
     # now calculate the convex hull
-    ch = [(0.0, Decimal(0), complex(0,0)), points[0]]
+    ch = [(angle(0,0), Decimal(0), complex(0,0)), points[0]]
     index = 1
     while index < len(points):
         p1 = points[index]
@@ -81,8 +115,10 @@ def inside(ch: list, point: complex) -> bool:
     phi, r = point.phase(), point.abs()
     
     # if the angle isn't within the polygon
-    if phi < ch[0][0] or phi > ch[-1][0]:
-        return False
+    if phi <= ch[1][0] or phi >= ch[-1][0]:
+        # print(phi, ch[1][0], ch[-1][0], phi <= ch[1][0])
+        return False, -1, -1
+    # print(phi, ch[0][0], ch[1][0])
     
     # find which points the angle is between
     lo, hi = 0, len(ch)
@@ -100,8 +136,8 @@ def inside(ch: list, point: complex) -> bool:
     area1   = triArea(r1, r, (p1 - point).abs())
     area2   = triArea(r, r2, (point - p2).abs())
     if area1 + area2 < areaBig:
-        return True
-    return False
+        return True, lo, hi
+    return False, lo, hi
 
 def findArea(point: complex, ch: list, dp: list) -> Decimal:
     """ Find the area of the polygon with this point added """
@@ -117,33 +153,53 @@ def findArea(point: complex, ch: list, dp: list) -> Decimal:
 def searchMin(lo: int, hi: int, ch: list, point: complex) -> int:
     """ Find the index of the point in `ch` in the indexes between `lo` and `hi`
         that yields the smallest angle from `point` """
-    m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
-    phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
-    while hi - lo > 1:
+    # print(lo, hi)
+    m1, m2 = lo + (hi - lo) // 3, lo + 2 * (hi - lo) // 3
+    phi1, phi2, phi3, phi4 = (ch[lo][2] - point).phase(), (ch[m1][2] - point).phase(), (ch[m2][2] - point).phase(), (ch[hi][2] - point).phase()
+    i = 0
+    while hi - lo > 2:
+        i += 1
+        if i > 50 and i < 60:
+            print(i, lo, m1, m2, hi, phi1, phi2, phi3, phi4)
         if phi2 <= phi1 and phi3 <= phi2:
             lo = m1
         if phi2 <= phi3 and phi3 <= phi4:
             hi = m2
-        m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
-        phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
-    if phi1 < phi4:
+        m1, m2 = lo + (hi - lo) // 3, lo + 2 * (hi - lo) // 3
+        phi1, phi2, phi3, phi4 = (ch[lo][2] - point).phase(), (ch[m1][2] - point).phase(), (ch[m2][2] - point).phase(), (ch[hi][2] - point).phase()
+    # print(lo, m1, m2, hi)
+    # print(phi1, phi3, phi4)
+    # print(point._real, point._imag)
+    # print(ch[lo][2]._real, ch[lo][2]._imag)
+    # print(ch[m2][2]._real, ch[m2][2]._imag)
+    if phi1 < phi3:
         return lo
+    if phi3 < phi4:
+        return m2
     return hi
 
 def searchMax(lo: int, hi: int, ch: list, point: complex) -> int:
     """ Find the index of the point in `ch` in the indexes between `lo` and `hi`
         that yields the largest angle from `point` """
-    m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
-    phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
-    while hi - lo > 1:
+    # print(lo, hi)
+    m1, m2 = lo + (hi - lo) // 3, lo + 2 * (hi - lo) // 3
+    # print(lo, m1, m2, hi, len(ch))
+    phi1, phi2, phi3, phi4 = (ch[lo][2] - point).phase(), (ch[m1][2] - point).phase(), (ch[m2][2] - point).phase(), (ch[hi][2] - point).phase()
+    i = 0
+    while hi - lo > 2:
+        i += 1
+        if i > 50 and i < 60:
+            print(i, lo, m1, m2, hi, (ch[lo][2] - point)._real, (ch[lo][2] - point)._imag, (ch[lo][2] - point).phase(), file=sys.stderr)
         if phi2 >= phi1 and phi3 >= phi2:
             lo = m1
         if phi2 >= phi3 and phi3 >= phi4:
             hi = m2
-        m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
-        phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
-    if phi1 < phi4:
+        m1, m2 = lo + (hi - lo) // 3, lo + 2 * (hi - lo) // 3
+        phi1, phi2, phi3, phi4 = (ch[lo][2] - point).phase(), (ch[m1][2] - point).phase(), (ch[m2][2] - point).phase(), (ch[hi][2] - point).phase()
+    if phi1 > phi3:
         return lo
+    if phi3 > phi4:
+        return m2
     return hi
 
 def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
@@ -159,8 +215,10 @@ def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
         else:
             lo = mid
     
+    # print("lohi", lo, hi, len(ch))
+    
     leftSide = searchMin(0, lo, ch, point)
-    if hi == len(ch):
+    if phi >= ch[-1][0]:
         rightSide = 0
     else:
         rightSide = searchMax(hi, len(ch) - 1, ch, point)
@@ -168,29 +226,50 @@ def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
     # The area of the orig that's going away
     area1 = dp[leftSide - 2] if leftSide >= 2 else 0
     # The area of the orig that's staying
-    area2 = dp[rightSide - 3] if rightSide >= 2 else dp[-1] if rightSide == 0 else 0
+    area2 = dp[rightSide - 2] if rightSide >= 2 else dp[-1] if rightSide == 0 else 0
     # Area of the left triangle
     area3 = triArea(point.abs(), (point - ch[leftSide][2]).abs(), ch[leftSide][1])
     # Area of the right triangle
-    area3 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    area4 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    
+    # error  = area2 + area3 + area4 - area1 - findArea(point, ch, dp)
+    # if abs(error) > 1e-9:
+    #     print("************")
+    #     print("Error1:", error)
     
     return area2 + area3 + area4 - area1
 
 def findAreaAbove(point: complex, ch: list, dp: list, lo: int, hi: int) -> Decimal:
     """ point is above the polygon, so find the area looking upward from the inverted reference frame """
-    phi = (zero - point).phase()
+    # for _1, _ , p in ch:
+    #     print(_1, p._real, p._imag)
     
     leftSide = searchMin(hi, len(ch) - 1, ch, point)
-    rightSide = searchMax(0, lo, ch, point)
+    rightSide = searchMax(1, lo, ch, point)
     
-    # The area of the orig that's going away
-    area1 = dp[rightSide - 2] if rightSide >= 2 else 0
+    # print((ch[leftSide][2] - point).phase(), (ch[rightSide][2] - point).phase())
+    
+    # print(leftSide, rightSide, lo)
+    # if leftSide == 4 and rightSide == 1 and lo == 2:
+    #     leftSide = 3
+    
     # The area of the orig that's staying
+    area1 = dp[rightSide - 2] if rightSide >= 2 else 0
+    if rightSide == 0:
+        raise Exception()
+    # The area of the orig that's going
     area2 = dp[leftSide - 2]
     # Area of the left triangle
     area3 = triArea(point.abs(), (point - ch[leftSide][2]).abs(), ch[leftSide][1])
     # Area of the right triangle
-    area3 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    area4 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    
+    # error = dp[-1] - area2 + area3 +area4 + area1 - findArea(point, ch, dp)
+    # if abs(error) > 1e-9:
+    #     print("************")
+    #     print("Error:", error)
+    #     for _1, _, p in ch:
+    #         print(p._real, p._imag)
     
     return dp[-1] - area2 + area3 + area4 + area1
     
@@ -218,10 +297,17 @@ while True:
         # print(point._real, point._imag)
         ins, lo, hi = inside(ch, point)
         if not ins:
+            # area = findArea(point, ch, dp)
             if lo == -1:
                 area = findAreaBelow(point, ch, dp)
+                # print(1)
             else:
-                area = findAreaAbove(zero - poitn, negCh, dp, lo, hi)
+                area = findAreaAbove(zero - point, negCh, dp, lo, hi)
+                # print(2)
+            if area < dp[-1]:
+                print(lo, hi)
+                raise Exception()
+            # print(area)
             maxArea = max(maxArea, area)
     
     print("{:.1f}".format(maxArea))
