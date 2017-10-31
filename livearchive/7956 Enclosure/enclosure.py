@@ -1,6 +1,7 @@
 from decimal import *
 from math import atan2, pi
 import sys
+from collections import deque
 
 getcontext().prec = 25
 
@@ -78,8 +79,9 @@ def convexHull(points: list) -> tuple:
     points = sorted([(p.phase(), p.abs(), p) for p in points])
     
     # now calculate the convex hull
-    ch = [(angle(0,0), Decimal(0), complex(0,0)), points[0]]
+    ch = deque([(angle(0,0), Decimal(0), complex(0,0)), points[0]])
     index = 1
+
     while index < len(points):
         p1 = points[index]
         p2 = ch[-1]
@@ -93,13 +95,14 @@ def convexHull(points: list) -> tuple:
         area2 = triArea(p2[1], p3[1], (p2[2] - p3[2]).abs())
         
         if area1 + area2 < areaBig:
-            del ch[-1]
+            ch.pop()
         elif ch[-1][0] != p1[0]:
             ch.append(p1)
             index += 1
         else:
             index += 1
-    return ch, pivot
+
+    return list(ch), pivot
 
 def buildAreas(ch: list, pivot: complex) -> list:
     """ Build a list of the cumulative areas of the triangles composing the main polygon """
@@ -281,7 +284,6 @@ while True:
         x, y = map(int, input().split())
         points.append(complex(x, y))
     ch, pivot = convexHull(points[:k])
-    # break
     #for _, _, c in ch:
     #    print(c._real, c._imag)
     
