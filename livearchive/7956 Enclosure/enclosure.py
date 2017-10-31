@@ -20,10 +20,6 @@ class complex:
     
     def __lt__(self, other):
         return False
-    
-    # def quadrant(self):
-    #     if self._real > 0:
-    #         if self._i
 
 zero = complex(0,0)
 
@@ -124,12 +120,31 @@ def searchMin(lo: int, hi: int, ch: list, point: complex) -> int:
     m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
     phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
     while hi - lo > 1:
-        if phi1 < phi2:
-            hi = m1
-        else if phi2 < phi3:
-            
+        if phi2 <= phi1 and phi3 <= phi2:
+            lo = m1
+        if phi2 <= phi3 and phi3 <= phi4:
+            hi = m2
         m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
         phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
+    if phi1 < phi4:
+        return lo
+    return hi
+
+def searchMax(lo: int, hi: int, ch: list, point: complex) -> int:
+    """ Find the index of the point in `ch` in the indexes between `lo` and `hi`
+        that yields the largest angle from `point` """
+    m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
+    phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
+    while hi - lo > 1:
+        if phi2 >= phi1 and phi3 >= phi2:
+            lo = m1
+        if phi2 >= phi3 and phi3 >= phi4:
+            hi = m2
+        m1, m2 = (lo + hi) // 3, 2 * (lo + hi) // 3
+        phi1, phi2, phi3, phi4 = (ch[lo] - point).phase(), (ch[m1] - point).phase(), (ch[m2] - point).phase(), (ch[hi] - point).phase()
+    if phi1 < phi4:
+        return lo
+    return hi
 
 def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
     """ point is below the polygon, so find the area looking upward """
@@ -148,7 +163,36 @@ def findAreaBelow(point: complex, ch: list, dp: list) -> Decimal:
     if hi == len(ch):
         rightSide = 0
     else:
-        rightSide = searchMin(hi, len(ch) - 1, ch, point)
+        rightSide = searchMax(hi, len(ch) - 1, ch, point)
+    
+    # The area of the orig that's going away
+    area1 = dp[leftSide - 2] if leftSide >= 2 else 0
+    # The area of the orig that's staying
+    area2 = dp[rightSide - 3] if rightSide >= 2 else dp[-1] if rightSide == 0 else 0
+    # Area of the left triangle
+    area3 = triArea(point.abs(), (point - ch[leftSide][2]).abs(), ch[leftSide][1])
+    # Area of the right triangle
+    area3 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    
+    return area2 + area3 + area4 - area1
+
+def findAreaAbove(point: complex, ch: list, dp: list, lo: int, hi: int) -> Decimal:
+    """ point is above the polygon, so find the area looking upward from the inverted reference frame """
+    phi = (zero - point).phase()
+    
+    leftSide = searchMin(hi, len(ch) - 1, ch, point)
+    rightSide = searchMax(0, lo, ch, point)
+    
+    # The area of the orig that's going away
+    area1 = dp[rightSide - 2] if rightSide >= 2 else 0
+    # The area of the orig that's staying
+    area2 = dp[leftSide - 2]
+    # Area of the left triangle
+    area3 = triArea(point.abs(), (point - ch[leftSide][2]).abs(), ch[leftSide][1])
+    # Area of the right triangle
+    area3 = triArea(point.abs(), (point - ch[rightSide][2]).abs(), ch[rightSide][1])
+    
+    return dp[-1] - area2 + area3 + area4 + area1
     
 
 n, k = map(int, input().split())
@@ -177,7 +221,7 @@ while True:
             if lo == -1:
                 area = findAreaBelow(point, ch, dp)
             else:
-                area = findAreaAbove(zero - poitn, negCh, dp)
+                area = findAreaAbove(zero - poitn, negCh, dp, lo, hi)
             maxArea = max(maxArea, area)
     
     print("{:.1f}".format(maxArea))
