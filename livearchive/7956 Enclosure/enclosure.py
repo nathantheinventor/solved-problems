@@ -3,7 +3,7 @@ from math import atan2, pi
 import sys
 from collections import deque
 
-getcontext().prec = 28
+getcontext().prec = 25
 
 zeroD = Decimal(0)
 
@@ -142,16 +142,16 @@ def inside(ch: list, point: complex) -> bool:
         return True, lo, hi
     return False, lo, hi
 
-def findArea(point: complex, ch: list, dp: list) -> Decimal:
-    """ Find the area of the polygon with this point added """
-    points = [p[2] for p in ch]
-    points.append(point)
+# def findArea(point: complex, ch: list, dp: list) -> Decimal:
+#     """ Find the area of the polygon with this point added """
+#     points = [p[2] for p in ch]
+#     points.append(point)
     
-    ch2, pivot = convexHull(points)
+#     ch2, pivot = convexHull(points)
     
-    area = buildAreas(ch2, pivot)
+#     area = buildAreas(ch2, pivot)
     
-    return area[-1]
+#     return area[-1]
 
 def searchMin(lo: int, hi: int, ch: list, point: complex) -> int:
     """ Find the index of the point in `ch` in the indexes between `lo` and `hi`
@@ -283,9 +283,7 @@ while True:
     for i in range(n):
         x, y = map(int, input().split())
         points.append(complex(x, y))
-    
     ch, pivot = convexHull(points[:k])
-
     #for _, _, c in ch:
     #    print(c._real, c._imag)
     
