@@ -1,0 +1,1 @@
+print((lambda n, x: sum([1 for f in range(1, n + 1) if x % f == 0 and x // f <= n])) (*map(int, input().split())))
