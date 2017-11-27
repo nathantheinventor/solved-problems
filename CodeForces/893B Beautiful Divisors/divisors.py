@@ -1,0 +1,1 @@
+print((lambda divisors, n: max([x for x in divisors if n % x == 0])) ([(2 ** (i - 1)) * (2 ** i - 1) for i in range(1, 40)], int(input())))
