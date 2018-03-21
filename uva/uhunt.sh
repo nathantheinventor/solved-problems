@@ -22,10 +22,10 @@ do
         echo "Diff $id"
         echo "---------------------------"
         if [ "$2" = "cpp" ]; then
-            ./$3 < $id.in > $id.out
+            time ./$3 < $id.in > $id.out
             diff $id.out $id.exp
         else
-            python3 $2.py < $id.in > $id.out
+            time python3 $2.py < $id.in > $id.out
             diff $id.out $id.exp
         fi
     fi
