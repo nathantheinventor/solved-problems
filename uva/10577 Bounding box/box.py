@@ -1,5 +1,6 @@
 from cmath import phase
 from math import pi, sqrt, cos, sin
+import sys
 
 def cis(x: float) -> complex:
     return cos(x) + 1j * sin(x)
@@ -19,10 +20,13 @@ def centerF(x: complex, y: complex, z: complex, radius: float) -> complex:
     
     center = chordCenter + length * chordVector
     
-    if abs(abs(center - z) - radius) > 1e-2:
+    if radius - abs(chordCenter - x) < 1e-4:
+        length = 0
+    
+    if abs(abs(center - z) - radius) > 1e-4:
         center = chordCenter - length * chordVector
     
-    if abs(abs(center - z) - radius) > 1e-2:
+    if abs(abs(center - z) - radius) > 1e-4:
         print(abs(center - z) - radius)
         while True:
             pass #spin to get a TLE
@@ -62,7 +66,7 @@ while n > 0:
     
     radius = sum([radius1,radius2,radius3]) / 3
     
-    radius = round(radius)
+    # radius = round(radius)
     
     x, y, z = points
     center1 = centerF(x, y, z, radius)
@@ -71,20 +75,30 @@ while n > 0:
     
     center = sum([center1,center2,center3]) / 3
     
-    center = round(center.real) + round(center.imag) * 1j
+    # center = round(center.real) + round(center.imag) * 1j
     
-    fullPoints = [points[0]]
-    point = fullPoints[-1] - center
-    theta = phase(point) + 2 * pi / n
+    # for point in points:
+    #     print(center)
+    #     print(abs(point - center))
     
-    # print(theta * 180 / pi * n)
+    # center = round(center.real) + round(center.imag) * 1j
+    
+    fullPoints = [points[0] - center]
+    point = fullPoints[-1]
+    theta = phase(point)# + 2 * pi / n
+    
+    # # print(theta * 180 / pi * n)
     tmp = round(theta * 180 / pi * n)
     theta = tmp / n * pi / 180
-    fullPoints[0] = center + radius * cis(theta)
+    # fullPoints[0] = center + radius * cis(theta)
     
-    for _ in range(n - 1):
-        point = fullPoints[-1] - center
-        theta = phase(point) + 2 * pi / n
+    myPhase = phase(fullPoints[-1])
+    myPhase = theta
+    radius = round(radius)
+    # print(theta, myPhase)
+    for i in range(1, n):
+        theta = (tmp + i * 360) / n * pi / 180
+        # print(radius, theta)
         
         newPoint = radius * cis(theta)
         
@@ -93,7 +107,10 @@ while n > 0:
         if abs(center + newPoint - points[2]) < 1e-4:
             newPoint = points[2] - center
         
-        fullPoints.append(newPoint + center)
+        r = abs(newPoint)
+        print(r - round(r), file=sys.stderr)
+        
+        fullPoints.append(newPoint)
     
     heights = [p.imag for p in fullPoints]
     widths = [p.real for p in fullPoints]

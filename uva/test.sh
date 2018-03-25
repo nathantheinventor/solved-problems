@@ -1,5 +1,5 @@
 if [ "$1" = "cpp" ]; then
-    g++ -std=c++11 $2.cpp -o $2
+    g++-7 -std=c++11 $2.cpp -o $2
     ./$2 < $2.in > $2.out
     diff $2.out $2.exp
 else
