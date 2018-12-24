@@ -5,11 +5,11 @@ typedef long long ll;
 int g, V, r;
 
 map<ll, ll> dp[100];
-int apsp[100][100];
+ll apsp[100][100];
 
 struct Gig {
     int start, end, venue, money;
-    bool operator<(const gig other) const {
+    bool operator<(const Gig other) const {
         return end < other.end;
     }
 };
@@ -39,7 +39,7 @@ int main() {
     
     // read in the gigs
     for (int i = 0; i < g; i ++) {
-        int s, e, v, m; cin >> s >> e >> v >> m;
+        int s, e, v, m; cin >> v >> s >> e >> m; v--;
         gigs.push_back({s, e, v, m});
     }
     sort(gigs.begin(), gigs.end());
@@ -48,18 +48,22 @@ int main() {
     dp[0][0] = 0;
     for (Gig gig: gigs) {
         ll maxMoney = 0;
-        auto tmp = dp[gig.venue].lower_bound(gigs.end);
-        if (tmp != dp[gig.venue].end()) {
+        auto tmp = dp[gig.venue].upper_bound(gig.end);
+        if (tmp != dp[gig.venue].begin()) {
+            tmp --;
             maxMoney = (*tmp).second;
         }
         for (int i = 0; i < V; i ++) {
-            int dist = apsp[i][gig.venue];
-            auto tmp2 = dp[i].lower_bound(gigs.start - dist);
-            if (tmp2 != dp[i].end()) {
+            ll dist = apsp[i][gig.venue];
+            auto tmp2 = dp[i].upper_bound(gig.start - dist);
+            if (tmp2 != dp[i].begin()) {
+                tmp2 --;
                 maxMoney = max(maxMoney, (*tmp2).second + gig.money);
             }
         }
-        dp[gig.venue][gig.end] = maxMoney;
+        if (maxMoney > 0) {
+            dp[gig.venue][gig.end] = maxMoney;
+        }
     }
     ll ans = 0;
     for (int i = 0; i < V; i ++) {
