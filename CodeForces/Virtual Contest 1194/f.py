@@ -51,19 +51,19 @@ def bernoulli(r, n):
         return berndp[r][n]
     if n in berndp[r - 1]:
         # print(4)
-        berndp[r][n] = berndp[r - 1][n] * 2 - ncr(r - 2, n - 1)
+        berndp[r][n] = berndp[r - 1][n] * 2 - ncr(r - 2, n - 1) % MOD
         return berndp[r][n]
     else:
         # print(5)
         k = min(x for x in berndp[r - 1] if x > n)
         k2 = min([x for x in berndp[r] if x > n] + [10 ** 8])
         if k < k2:
-            berndp[r][k] = berndp[r - 1][k] * 2 - ncr(r - 2, k - 1)
+            berndp[r][k] = berndp[r - 1][k] * 2 - ncr(r - 2, k - 1) % MOD
         else:
             k = k2
         tmp = berndp[r][k]
         for j in range(k - 1, n - 1, -1):
-            tmp = tmp - ncr(r - 1, j - 1)
+            tmp = tmp - ncr(r - 1, j - 1) % MOD
         berndp[r][n] = tmp
         return berndp[r][n]
 
@@ -85,7 +85,7 @@ def count(r, m1, m2):
     x2 = bernoulli(r + 1, max(min(m1 + 1, r + 1), 0))
     # print(x2)
     # print(r,m1,m2,"=>",x1 - x2)
-    return x1 - x2
+    return x1 - x2 % MOD
 
 
 ans = 0
